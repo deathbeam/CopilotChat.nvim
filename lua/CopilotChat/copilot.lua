@@ -654,29 +654,8 @@ function Copilot:ask(prompt, opts)
     job:shutdown(0)
   end
 
-  local function stream_func(err, line, job)
-    if not line or errored or finished then
-      return
-    end
-
-    if self.current_job ~= job_id then
-      finish_stream(nil, job)
-      return
-    end
-
-    if err or vim.startswith(line, '{"error"') then
-      finish_stream('Failed to get response: ' .. (err and vim.inspect(err) or line), job)
-      return
-    end
-
-    if not vim.startswith(line, 'data: ') then
-      return
-    end
-
-    line = line:gsub('^%s*data:%s*', ''):gsub('%s*$', '')
-
-    if line == '[DONE]' then
-      finish_stream(nil, job)
+  local function parse_line(line)
+    if not line then
       return
     end
 
@@ -727,6 +706,36 @@ function Copilot:ask(prompt, opts)
     full_response = full_response .. content
   end
 
+  local function stream_func(err, line, job)
+    if not line or errored or finished then
+      return
+    end
+
+    if self.current_job ~= job_id then
+      finish_stream(nil, job)
+      return
+    end
+
+    if err or vim.startswith(line, '{"error"') then
+      finish_stream('Failed to get response: ' .. (err and vim.inspect(err) or line), job)
+      return
+    end
+
+    if not vim.startswith(line, 'data: ') then
+      return
+    end
+
+    line = line:gsub('^%s*data:%s*', ''):gsub('%s*$', '')
+
+    if line == '[DONE]' then
+      finish_stream(nil, job)
+      return
+    end
+
+    parse_line(line)
+  end
+
+  local is_stream = not vim.startswith(model, 'o1')
   local body = vim.json.encode(
     generate_ask_request(
       self.history,
@@ -736,7 +745,7 @@ function Copilot:ask(prompt, opts)
       model,
       temperature,
       max_output_tokens,
-      not vim.startswith(model, 'o1')
+      is_stream
     )
   )
 
@@ -749,14 +758,16 @@ function Copilot:ask(prompt, opts)
     url = 'https://api.githubcopilot.com/agents/' .. agent .. '?chat'
   end
 
-  local response, err = curl_post(
-    url,
-    vim.tbl_extend('force', self.request_args, {
-      headers = self:authenticate(),
-      body = temp_file(body),
-      stream = stream_func,
-    })
-  )
+  local args = vim.tbl_extend('force', self.request_args, {
+    headers = self:authenticate(),
+    body = temp_file(body),
+  })
+
+  if is_stream then
+    args.stream = stream_func
+  end
+
+  local response, err = curl_post(url, args)
 
   if self.current_job ~= job_id then
     return nil, nil, nil
@@ -801,6 +812,10 @@ function Copilot:ask(prompt, opts)
   if errored then
     error(full_response)
     return
+  end
+
+  if not is_stream then
+    parse_line(response.body)
   end
 
   if full_response == '' then
