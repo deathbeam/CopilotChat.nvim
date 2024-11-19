@@ -188,6 +188,7 @@ local function get_diff()
     end
 
     filename = header_filename
+    filetype = vim.filetype.match({ filename = filename })
     start_line = header_start_line
     end_line = header_end_line
 
@@ -1052,6 +1053,43 @@ function M.setup(config)
 
       map_key(M.config.mappings.accept_diff, bufnr, function()
         apply_diff(get_diff())
+      end)
+
+      map_key(M.config.mappings.jump_to_diff, bufnr, function()
+        if not state.source or not state.source.winnr then
+          return
+        end
+
+        local diff = get_diff()
+        if not diff then
+          return
+        end
+
+        -- Try to find existing buffer first
+        local buf_exists = false
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_get_name(buf) == diff.filename then
+            vim.api.nvim_win_set_buf(state.source.winnr, buf)
+            buf_exists = true
+            break
+          end
+        end
+
+        -- Create new empty buffer if doesn't exist
+        if not buf_exists then
+          local new_buf = vim.api.nvim_create_buf(true, false)
+          vim.api.nvim_buf_set_name(new_buf, diff.filename)
+          if diff.filetype then
+            vim.bo[new_buf].filetype = diff.filetype
+          end
+
+          vim.api.nvim_win_set_buf(state.source.winnr, new_buf)
+        end
+
+        -- Jump to the correct line
+        if diff.start_line then
+          vim.api.nvim_win_set_cursor(state.source.winnr, { diff.start_line, 0 })
+        end
       end)
 
       map_key(M.config.mappings.yank_diff, bufnr, function()
