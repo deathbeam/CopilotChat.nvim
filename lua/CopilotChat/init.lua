@@ -90,19 +90,24 @@ end
 
 --- Updates the selection based on previous window
 local function update_selection()
-  local prev_winnr = vim.fn.win_getid(vim.fn.winnr('#'))
-  if prev_winnr ~= state.chat.winnr and vim.fn.win_gettype(prev_winnr) == '' then
-    -- TODO: This is a hack to get the cwd of the previous window properly, its actually baffling I have to do this
-    local current_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_set_current_win(prev_winnr)
-    local cwd = vim.fn.getcwd()
-    vim.api.nvim_set_current_win(current_win)
+  local winnr = vim.fn.win_getid(vim.fn.winnr('#'))
+  if winnr ~= state.chat.winnr and vim.fn.win_gettype(winnr) == '' then
+    local bufnr = vim.api.nvim_win_get_buf(winnr)
+    if not state.source or state.source.winnr ~= winnr or state.source.bufnr ~= bufnr then
+      log.debug('Updating source buffer', state.source, winnr, bufnr)
 
-    state.source = {
-      bufnr = vim.api.nvim_win_get_buf(prev_winnr),
-      winnr = prev_winnr,
-      cwd = cwd,
-    }
+      -- TODO: This is a hack to get the cwd of the previous window properly, its actually baffling I have to do this
+      local current_win = vim.api.nvim_get_current_win()
+      vim.api.nvim_set_current_win(winnr)
+      local cwd = vim.fn.getcwd()
+      vim.api.nvim_set_current_win(current_win)
+
+      state.source = {
+        bufnr = bufnr,
+        winnr = winnr,
+        cwd = cwd,
+      }
+    end
   end
 
   highlight_selection()
