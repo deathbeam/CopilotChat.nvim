@@ -1316,10 +1316,12 @@ function M.setup(config)
   -- I dont think there is a better way to do this that functions
   -- with "rooter" plugins, LSP and stuff as vim.fn.getcwd() when
   -- i pass window number inside doesnt work
-  vim.api.nvim_create_autocmd({ 'VimEnter', 'WinEnter' }, {
+  vim.api.nvim_create_autocmd('DirChanged', {
     group = augroup,
     callback = function()
-      vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.fn.getcwd())
+      if vim.v.event and vim.v.event.cwd then
+        vim.api.nvim_win_set_var(0, 'cchat_cwd', vim.v.event.cwd)
+      end
     end,
   })
 end
