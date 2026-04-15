@@ -22,12 +22,8 @@ local M = setmetatable({}, {
     -- Lazy initialize
     local initialized = rawget(t, 'initialized')
     if not initialized then
-      local ok, err = pcall(rawget(t, 'setup'))
-      if ok then
-        rawset(t, 'initialized', true)
-      else
-        require('plenary.log').error('CopilotChat setup failed:', err)
-      end
+      rawset(t, 'initialized', true)
+      rawget(t, 'setup')()
     end
 
     return rawget(t, key)
