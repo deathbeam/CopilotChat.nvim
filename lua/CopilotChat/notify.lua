@@ -32,4 +32,9 @@ function M.listen(event_name, callback)
   table.insert(M.listeners[event_name], callback)
 end
 
+--- Clear all listeners
+function M.clear()
+  M.listeners = {}
+end
+
 return M

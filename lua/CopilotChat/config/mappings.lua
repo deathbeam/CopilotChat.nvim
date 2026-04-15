@@ -14,23 +14,19 @@ local function prepare_diff_buffer(filename, source)
     filename = vim.api.nvim_buf_get_name(source.bufnr)
   end
 
+  -- Try to find matching buffer first
   local diff_bufnr = nil
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if files.filename_same(vim.api.nvim_buf_get_name(buf), filename) then
+      diff_bufnr = buf
+      break
+    end
+  end
 
-  -- If buffer is not found, try to load it
+  -- If not found, create a new buffer
   if not diff_bufnr then
-    -- Try to find matching buffer first
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if files.filename_same(vim.api.nvim_buf_get_name(buf), filename) then
-        diff_bufnr = buf
-        break
-      end
-    end
-
-    -- If still not found, create a new buffer
-    if not diff_bufnr then
-      diff_bufnr = vim.fn.bufadd(filename)
-      vim.fn.bufload(diff_bufnr)
-    end
+    diff_bufnr = vim.fn.bufadd(filename)
+    vim.fn.bufload(diff_bufnr)
   end
 
   -- If source exists, update it to point to the diff buffer
@@ -243,10 +239,10 @@ return {
             })
           end
         end
-
-        vim.fn.setqflist(items)
-        vim.cmd('copen')
       end
+
+      vim.fn.setqflist(items)
+      vim.cmd('copen')
     end,
   },
 

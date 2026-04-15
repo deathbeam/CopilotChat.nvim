@@ -161,16 +161,16 @@ function M.apply_unified_diff(diff_text, original_content)
   end
 
   local new_lines = vim.split(new_content, '\n', { trimempty = true })
-  local hunks = vim.diff(
+  local diff_hunks = vim.diff(
     original_content,
     new_content,
     { algorithm = 'myers', ctxlen = 10, interhunkctxlen = 10, ignore_whitespace_change = true, result_type = 'indices' }
   )
-  if not hunks or #hunks == 0 then
+  if not diff_hunks or #diff_hunks == 0 then
     return new_lines, applied, nil, nil
   end
   local first, last
-  for _, hunk in ipairs(hunks) do
+  for _, hunk in ipairs(diff_hunks) do
     local hunk_start = hunk[1]
     local hunk_end = hunk[1] + hunk[2] - 1
     if not first or hunk_start < first then

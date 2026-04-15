@@ -247,7 +247,7 @@ return {
         {
           uri = 'neovim://selection',
           name = selection.filename,
-          mimetype = files.mimetype_to_filetype(selection.filetype),
+          mimetype = files.filetype_to_mimetype(selection.filetype),
           data = data,
           annotations = {
             start_line = selection.start_line,

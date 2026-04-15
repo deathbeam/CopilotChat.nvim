@@ -22,8 +22,12 @@ local M = setmetatable({}, {
     -- Lazy initialize
     local initialized = rawget(t, 'initialized')
     if not initialized then
-      rawset(t, 'initialized', true)
-      rawget(t, 'setup')()
+      local ok, err = pcall(rawget(t, 'setup'))
+      if ok then
+        rawset(t, 'initialized', true)
+      else
+        require('plenary.log').error('CopilotChat setup failed:', err)
+      end
     end
 
     return rawget(t, key)
@@ -54,8 +58,12 @@ local function process_sticky(prompt, config)
   end
 
   -- Find sticky lines in new prompt to remove them
+  in_code_block = false
   for i, line in ipairs(lines) do
-    if vim.startswith(line, '> ') then
+    if line:match('^```') then
+      in_code_block = not in_code_block
+    end
+    if vim.startswith(line, '> ') and not in_code_block then
       table.insert(sticky_indices, i)
     end
   end
@@ -349,8 +357,8 @@ end
 --- Select a prompt template to use.
 ---@param config CopilotChat.config.Shared?
 function M.select_prompt(config)
-  local prompts = prompts.list_prompts()
-  local keys = vim.tbl_keys(prompts)
+  local prompt_list = prompts.list_prompts()
+  local keys = vim.tbl_keys(prompt_list)
   table.sort(keys)
 
   local choices = vim
@@ -358,8 +366,8 @@ function M.select_prompt(config)
     :map(function(name)
       return {
         name = name,
-        description = prompts[name].description,
-        prompt = prompts[name].prompt,
+        description = prompt_list[name].description,
+        prompt = prompt_list[name].prompt,
       }
     end)
     :filter(function(choice)
@@ -696,6 +704,7 @@ function M.setup(config)
   end)
 
   -- Initialize chat
+  require('CopilotChat.notify').clear()
   if M.chat then
     M.chat:close()
     M.chat:delete()

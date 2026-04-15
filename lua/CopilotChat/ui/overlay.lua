@@ -128,7 +128,9 @@ function Overlay:restore(winnr, bufnr)
 
   -- Manually trigger BufEnter event as nvim_win_set_buf does not trigger it
   vim.schedule(function()
-    vim.cmd(string.format('doautocmd <nomodeline> BufEnter %s', bufnr))
+    if vim.api.nvim_buf_is_valid(bufnr) then
+      vim.api.nvim_exec_autocmds('BufEnter', { buffer = bufnr })
+    end
   end)
 end
 

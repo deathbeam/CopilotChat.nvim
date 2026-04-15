@@ -65,7 +65,7 @@ local orderedmap = require('CopilotChat.utils.orderedmap')
 local stringbuffer = require('CopilotChat.utils.stringbuffer')
 
 --- Constants
-local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=% end_line=%s\n%s\n```'
+local RESOURCE_SHORT_FORMAT = '# %s\n```%s start_line=%s end_line=%s\n%s\n```'
 local RESOURCE_LONG_FORMAT = '# %s\n```%s path=%s start_line=%s end_line=%s\n%s\n```'
 local CACHE_TTL = 300 -- 5 minutes
 
@@ -445,9 +445,10 @@ function Client:ask(opts)
 
     if out.tool_calls then
       for _, tool_call in ipairs(out.tool_calls) do
-        local val = tool_calls:get(tool_call.index)
+        local key = tool_call.id or tool_call.index
+        local val = tool_calls:get(key)
         if not val then
-          tool_calls:set(tool_call.index, tool_call)
+          tool_calls:set(key, tool_call)
         else
           val.arguments = val.arguments .. tool_call.arguments
         end
@@ -573,12 +574,10 @@ function Client:ask(opts)
     end
 
     error(error_msg)
-    return
   end
 
   if errored then
     error(errored)
-    return
   end
 
   local response_text = response_content_buffer:tostring()
