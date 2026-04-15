@@ -64,6 +64,7 @@ return {
           enum = function(source)
             return files.glob(source.cwd(), {
               max_count = 0,
+              hidden = true,
             })
           end,
         },
