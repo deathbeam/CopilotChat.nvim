@@ -445,7 +445,7 @@ function Client:ask(opts)
 
     if out.tool_calls then
       for _, tool_call in ipairs(out.tool_calls) do
-        local key = tool_call.id or tool_call.index or tool_call.name or (#tool_calls:values() + 1)
+        local key = tostring(tool_call.index or tool_call.id or tool_call.name or #tool_calls:values() + 1)
         local existing = tool_calls:get(key)
 
         if not existing then
