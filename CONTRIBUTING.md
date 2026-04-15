@@ -50,67 +50,83 @@ Go to the CopilotChat.nvim in your GitHub account, select your branch, and click
 
 ![structure.drawio](https://github.com/CopilotC-Nvim/CopilotChat.nvim/assets/5115805/e7517736-0152-47a3-8cb9-36a5dffcb6cc)
 
-### Main components
+### Core
 
-- [init.lua](/lua/CopilotChat/init.lua): This file initializes Copilot Chat
-  plugin. It includes functions for appending to the chat window, showing help,
-  completing, getting selection, opening and closing the chat window, asking
-  questions to the Copilot model, resetting the chat window, enabling/disabling
-  debug, and setting up the plugin.
+- [init.lua](/lua/CopilotChat/init.lua): Main module. Plugin initialization
+  (`setup()`), chat lifecycle (`ask()`, `open()`, `close()`, `toggle()`,
+  `reset()`), save/load, and sticky prompt processing.
 
-- [config.lua](/lua/CopilotChat/config.lua): This file contains default
-  configuration for Copilot Chat plugin.
+- [client.lua](/lua/CopilotChat/client.lua): Copilot API client. Handles
+  authentication, model listing, streaming requests, and tool call execution.
 
-- [copilot.lua](/lua/CopilotChat/copilot.lua): This file contains the core
-  functionality of the Copilot. It includes functions for generating unique IDs,
-  finding configuration paths, authenticating, asking questions to the Copilot,
-  generating embeddings, and managing the running job.
+- [config.lua](/lua/CopilotChat/config.lua): Default configuration schema.
 
-- [chat.lua](/lua/CopilotChat/chat.lua): This file manages the chat window. It
-  includes functions for creating, validating, appending to, clearing, opening,
-  closing, and focusing on the chat window.
+- [config/](/lua/CopilotChat/config/): Sub-configs for
+  [functions](/lua/CopilotChat/config/functions.lua),
+  [mappings](/lua/CopilotChat/config/mappings.lua),
+  [prompts](/lua/CopilotChat/config/prompts.lua), and
+  [providers](/lua/CopilotChat/config/providers.lua).
 
-- [diff.lua](/lua/CopilotChat/diff.lua): This file manages the diff window. It
-  includes functions for creating, validating, showing, and restoring the diff
-  window.
+- [constants.lua](/lua/CopilotChat/constants.lua): Shared constants (plugin
+  name, roles).
 
-- [select.lua](/lua/CopilotChat/select.lua): This file contains functions for
-  selecting and processing different types of data such as visual selection,
-  unnamed register, whole buffer, current line, diagnostics, and git diff.
+### Chat and UI
 
-- [context.lua](/lua/CopilotChat/context.lua): This file is responsible for
-  building an outline for a buffer and finding items for a query. It uses spatial
-  distance and relatedness to rank data.
+- [ui/chat.lua](/lua/CopilotChat/ui/chat.lua): Chat window management.
+  Creating, appending to, clearing, opening, closing, and focusing the chat
+  window. Handles fold expressions and section parsing.
 
-- [actions.lua](/lua/CopilotChat/actions.lua): This file manages the actions
-  that can be performed. It includes functions for getting help actions, prompt
-  actions, and picking an action from a list of actions using `vim.ui.select`.
+- [ui/overlay.lua](/lua/CopilotChat/ui/overlay.lua): Overlay buffer used for
+  displaying diff previews and other transient content.
 
-- [tiktoken.lua](/lua/CopilotChat/tiktoken.lua): This file manages integration
-  with Tiktoken library and is used for counting tokens. It includes functions
-  for setting up Tiktoken, checking its availability, encoding prompts, and
-  counting prompts.
+- [ui/spinner.lua](/lua/CopilotChat/ui/spinner.lua): Loading spinner indicator
+  for the chat window.
 
-- [health.lua](/lua/CopilotChat/health.lua): This file checks the health of the
-  plugin by checking if commands exist, checking if Lua libraries are installed,
-  and checking if a Treesitter parsers are available.
+### Features
 
-- [spinner.lua](/lua/CopilotChat/spinner.lua): This file manages a spinner that
-  is used for indicating loading status in chat window.
+- [prompts.lua](/lua/CopilotChat/prompts.lua): Prompt resolution, custom
+  instruction loading, system prompt building, and sticky/resource/tool
+  parsing from user input.
 
-- [utils.lua](/lua/CopilotChat/utils.lua): This file contains utility functions
-  for creating classes, getting the log file path, checking if the current
-  version of Neovim is stable, and joining multiple async functions.
+- [functions.lua](/lua/CopilotChat/functions.lua): Built-in functions/tools
+  exposed to the LLM (e.g., file editing, searching).
 
-- [debuginfo.lua](/lua/CopilotChat/debuginfo.lua): This file is used for
-  creating `:CopilotChatDebugInfo` command.
+- [resources.lua](/lua/CopilotChat/resources.lua): Resource handling for file
+  and URL content retrieval with caching.
 
-### Integrations
+- [completion.lua](/lua/CopilotChat/completion.lua): Completion source for the
+  chat window (`@tools`, `/prompts`, `#resources`, `$models`).
 
-- [telescope.lua](/lua/CopilotChat/integrations/telescope.lua): This file
-  integrates the Telescope plugin with CopilotChat. It includes a function for
-  picking an action from a list of actions.
+- [select.lua](/lua/CopilotChat/select.lua): Selection strategies for providing
+  context (visual selection, buffer, diagnostics, git diff, etc.).
 
-- [fzflua.lua](/lua/CopilotChat/integrations/fzflua.lua): This file integrates
-  the fzf-lua plugin with CopilotChat. It includes a function for picking an
-  action from a list of actions.
+- [tiktoken.lua](/lua/CopilotChat/tiktoken.lua): Token counting via native
+  tiktoken library.
+
+- [instructions/](/lua/CopilotChat/instructions/): System prompt templates
+  injected into LLM conversations (edit formats, tool use instructions, custom
+  instructions wrapper).
+
+### Utilities
+
+- [utils.lua](/lua/CopilotChat/utils.lua): General utility functions.
+
+- [utils/](/lua/CopilotChat/utils/): Utility modules —
+  [class.lua](/lua/CopilotChat/utils/class.lua) (OOP helper),
+  [curl.lua](/lua/CopilotChat/utils/curl.lua) (HTTP requests),
+  [diff.lua](/lua/CopilotChat/utils/diff.lua) (unified diff parsing and
+  application),
+  [files.lua](/lua/CopilotChat/utils/files.lua) (file I/O and filetype
+  detection),
+  [orderedmap.lua](/lua/CopilotChat/utils/orderedmap.lua) (insertion-ordered
+  map),
+  [stringbuffer.lua](/lua/CopilotChat/utils/stringbuffer.lua) (efficient string
+  concatenation).
+
+### Other
+
+- [health.lua](/lua/CopilotChat/health.lua): `:checkhealth` integration.
+  Verifies commands, libraries, and Treesitter parsers.
+
+- [notify.lua](/lua/CopilotChat/notify.lua): Pub/sub notification system for
+  status and message events.
