@@ -397,14 +397,12 @@ local function prepare_responses_output(output)
         content = output.delta.text
       end
     elseif output.type == 'response.output_item.done' then
-      -- Complete output item (including tool calls)
       local item = output.item
       if item and item.type == 'function_call' then
-        local index = output.output_index or (#tool_calls + 1)
         table.insert(tool_calls, {
-          id = item.call_id or ('tooluse_' .. index),
-          index = index,
-          name = item.name or '',
+          id = item.call_id,
+          index = output.output_index,
+          name = item.name,
           arguments = item.arguments or '',
         })
       end
@@ -436,9 +434,9 @@ local function prepare_responses_output(output)
         if msg.tool_calls then
           for i, tool_call in ipairs(msg.tool_calls) do
             table.insert(tool_calls, {
-              id = tool_call.call_id or ('tooluse_' .. i),
+              id = tool_call.call_id,
               index = i,
-              name = tool_call.name or '',
+              name = tool_call.name,
               arguments = tool_call.arguments or '',
             })
           end
@@ -481,11 +479,9 @@ local function prepare_chat_output(output)
         for i, tool_call in ipairs(message.tool_calls) do
           local fn = tool_call['function']
           if fn then
-            local index = tool_call.index or i
-            local id = utils.empty(tool_call.id) and ('tooluse_' .. index) or tool_call.id
             table.insert(tool_calls, {
-              id = id,
-              index = index,
+              id = tool_call.id,
+              index = tool_call.index or i,
               name = fn.name,
               arguments = fn.arguments or '',
             })

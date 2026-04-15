@@ -546,6 +546,7 @@ function M.ask(prompt, config)
         M.chat:add_message(response, true)
         M.chat.token_count = token_count
         M.chat.token_max_count = token_max_count
+
         finish()
       end
     end))

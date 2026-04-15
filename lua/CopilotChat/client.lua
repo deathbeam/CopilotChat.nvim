@@ -445,12 +445,22 @@ function Client:ask(opts)
 
     if out.tool_calls then
       for _, tool_call in ipairs(out.tool_calls) do
-        local key = tool_call.id or tool_call.index
-        local val = tool_calls:get(key)
-        if not val then
+        local key = tool_call.id or tool_call.index or tool_call.name or (#tool_calls:values() + 1)
+        local existing = tool_calls:get(key)
+
+        if not existing then
           tool_calls:set(key, tool_call)
         else
-          val.arguments = val.arguments .. tool_call.arguments
+          existing.arguments = existing.arguments .. tool_call.arguments
+          if tool_call.id then
+            existing.id = tool_call.id
+          end
+          if tool_call.index then
+            existing.index = tool_call.index
+          end
+          if tool_call.name then
+            existing.name = tool_call.name
+          end
         end
       end
     end
@@ -597,12 +607,17 @@ function Client:ask(opts)
     response_reasoning = response_reasoning_buffer:tostring()
   end
 
+  -- Filter out tool calls that don't have names (streaming deltas used only for accumulation)
+  local final_tool_calls = vim.tbl_filter(function(tc)
+    return tc.name ~= nil
+  end, tool_calls:values())
+
   return {
     message = {
       role = constants.ROLE.ASSISTANT,
       content = response_text,
       reasoning = response_reasoning,
-      tool_calls = #tool_calls:values() > 0 and tool_calls:values() or nil,
+      tool_calls = #final_tool_calls > 0 and final_tool_calls or nil,
       model = out_model,
     },
     token_count = token_count,
