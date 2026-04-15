@@ -164,7 +164,7 @@ M.grep = async.wrap(function(path, opts, callback)
 
     if opts.pattern then
       table.insert(cmd, '-e')
-      table.insert(cmd, "'" .. opts.pattern .. "'")
+      table.insert(cmd, opts.pattern)
     end
   elseif vim.fn.executable('grep') == 1 then
     table.insert(cmd, 'grep')
@@ -172,7 +172,7 @@ M.grep = async.wrap(function(path, opts, callback)
 
     if opts.pattern then
       table.insert(cmd, '-e')
-      table.insert(cmd, "'" .. opts.pattern .. "'")
+      table.insert(cmd, opts.pattern)
     end
   end
 

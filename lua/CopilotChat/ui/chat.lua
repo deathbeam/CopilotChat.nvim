@@ -863,10 +863,10 @@ function Chat:render()
       -- Highlight tools in the last user message
       local assistant_msg = self:get_message(constants.ROLE.ASSISTANT)
       if assistant_msg and assistant_msg.tool_calls and #assistant_msg.tool_calls > 0 then
-        for i, line in ipairs(utils.split_lines(message.content)) do
+        for j, line in ipairs(utils.split_lines(message.content)) do
           for _, tool_call in ipairs(assistant_msg.tool_calls) do
             if line:match(string.format('#%s:%s', tool_call.name, vim.pesc(tool_call.id))) then
-              local l = message.section.start_line + i
+              local l = message.section.start_line + j
               vim.api.nvim_buf_add_highlight(self.bufnr, highlight_ns, 'CopilotChatAnnotationHeader', l, 0, #line)
               if not utils.empty(tool_call.arguments) then
                 vim.api.nvim_buf_set_extmark(self.bufnr, highlight_ns, l, 0, {

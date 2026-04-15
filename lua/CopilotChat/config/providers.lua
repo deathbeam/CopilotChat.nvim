@@ -183,7 +183,7 @@ local function get_github_models_token(tag)
   end
 
   -- loading token from gh cli if available
-  if vim.fn.executable('gh') == 0 then
+  if vim.fn.executable('gh') == 1 then
     local result = utils.system({ 'gh', 'auth', 'token', '-h', 'github.com' })
     if result and result.code == 0 and result.stdout then
       local gh_token = vim.trim(result.stdout)
@@ -400,9 +400,10 @@ local function prepare_responses_output(output)
       -- Complete output item (including tool calls)
       local item = output.item
       if item and item.type == 'function_call' then
+        local index = output.output_index or (#tool_calls + 1)
         table.insert(tool_calls, {
-          id = item.call_id or ('tooluse_' .. (#tool_calls + 1)),
-          index = #tool_calls + 1,
+          id = item.call_id or ('tooluse_' .. index),
+          index = index,
           name = item.name or '',
           arguments = item.arguments or '',
         })
