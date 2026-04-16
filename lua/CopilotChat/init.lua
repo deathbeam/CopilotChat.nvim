@@ -378,7 +378,7 @@ function M.select_prompt(config)
     end,
   }, function(choice)
     if choice then
-      M.ask(prompts[choice.name].prompt, vim.tbl_extend('force', prompts[choice.name], config or {}))
+      M.ask(prompt_list[choice.name].prompt, vim.tbl_extend('force', prompt_list[choice.name], config or {}))
     end
   end)
 end
