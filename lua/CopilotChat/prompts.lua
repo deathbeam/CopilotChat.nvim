@@ -91,21 +91,73 @@ function M.resolve_tools(prompt, config)
   return enabled_tools:values(), prompt
 end
 
+--- Execute a tool call and return the raw output.
+---@param name string Tool name
+---@param input table|string Input arguments
+---@param config CopilotChat.config.Shared
+---@param source CopilotChat.client.Source
+---@return boolean ok
+---@return any output
+---@async
+function M.execute_tool_call(name, input, config, source)
+  local tool = config.functions[name]
+  if not tool or not tool.resolve then
+    return false, 'Tool not found: ' .. name
+  end
+
+  local schema = nil
+  for _, t in ipairs(functions.parse_tools(config.functions)) do
+    if t.name == name then
+      schema = t.schema
+      break
+    end
+  end
+
+  local ok, output
+  if config.stop_on_function_failure then
+    output = tool.resolve(functions.parse_input(input, schema), source)
+    ok = true
+  else
+    ok, output = pcall(tool.resolve, functions.parse_input(input, schema), source)
+  end
+
+  return ok, output
+end
+
+--- Format tool output as plain text.
+---@param ok boolean
+---@param output any
+---@return string
+function M.format_tool_output(ok, output)
+  local result = ''
+  if not ok then
+    result = utils.make_string(output)
+  elseif type(output) ~= 'table' then
+    result = utils.make_string(output)
+  else
+    for _, content in ipairs(output) do
+      if content then
+        local data = content.data or content.uri
+        if data then
+          result = result .. (utils.empty(result) and '' or '\n') .. data
+        end
+      end
+    end
+  end
+
+  return result
+end
+
 --- Call and resolve function calls from the prompt.
 ---@param prompt string?
 ---@param config CopilotChat.config.Shared?
----@return table<CopilotChat.client.Resource>, table<string>, table<string>, string
+---@return table<CopilotChat.client.Resource>, table, string
 ---@async
 function M.resolve_functions(prompt, config)
   config, prompt = M.resolve_prompt(prompt, config)
 
   local chat = require('CopilotChat').chat
   local source = chat:get_source()
-
-  local tools = {}
-  for _, tool in ipairs(functions.parse_tools(config.functions)) do
-    tools[tool.name] = tool
-  end
 
   if config.resources then
     local resources = utils.to_table(config.resources)
@@ -119,7 +171,6 @@ function M.resolve_functions(prompt, config)
 
   local resolved_resources = {}
   local resolved_tools = {}
-  local resolved_stickies = {}
   local tool_calls = {}
 
   utils.schedule_main()
@@ -199,56 +250,49 @@ function M.resolve_functions(prompt, config)
       return nil
     end
 
-    local schema = tools[name] and tools[name].schema or nil
-    local ok, output
-    if config.stop_on_function_failure then
-      output = tool.resolve(functions.parse_input(input, schema), source)
-      ok = true
-    else
-      ok, output = pcall(tool.resolve, functions.parse_input(input, schema), source)
-    end
-
-    local result = ''
-    if not ok then
-      result = utils.make_string(output)
-    else
-      for _, content in ipairs(output) do
-        if content then
-          local content_out = nil
-          if content.uri then
-            if
-              not vim.tbl_contains(resolved_resources, function(resource)
-                return resource.uri == content.uri
-              end, { predicate = true })
-            then
-              content_out = '##' .. content.uri
-              table.insert(resolved_resources, content)
-            end
-
-            if tool_id then
-              table.insert(resolved_stickies, '##' .. content.uri)
-            end
-          else
-            content_out = content.data
-          end
-
-          if content_out then
-            if not utils.empty(result) then
-              result = result .. '\n'
-            end
-            result = result .. content_out
-          end
-        end
-      end
-    end
+    local ok, output = M.execute_tool_call(name, input, config, source)
 
     if tool_id then
       table.insert(resolved_tools, {
         id = tool_id,
-        result = result,
+        result = M.format_tool_output(ok, output),
       })
 
       return ''
+    end
+
+    if not ok then
+      return utils.make_string(output)
+    end
+
+    if type(output) ~= 'table' then
+      return utils.make_string(output)
+    end
+
+    local result = ''
+    for _, content in ipairs(output) do
+      if content then
+        local content_out = nil
+        if content.uri then
+          if
+            not vim.tbl_contains(resolved_resources, function(resource)
+              return resource.uri == content.uri
+            end, { predicate = true })
+          then
+            content_out = '##' .. content.uri
+            table.insert(resolved_resources, content)
+          end
+        else
+          content_out = content.data
+        end
+
+        if content_out then
+          if not utils.empty(result) then
+            result = result .. '\n'
+          end
+          result = result .. content_out
+        end
+      end
     end
 
     return result
@@ -266,7 +310,7 @@ function M.resolve_functions(prompt, config)
     end
   end
 
-  return resolved_resources, resolved_tools, resolved_stickies, prompt
+  return resolved_resources, resolved_tools, prompt
 end
 
 --- Resolve the final prompt and config from prompt template.

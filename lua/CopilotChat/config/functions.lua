@@ -44,6 +44,7 @@ end
 ---@field description string?
 ---@field schema table?
 ---@field group string?
+---@field trusted boolean?
 ---@field uri string?
 ---@field resolve fun(input: table, source: CopilotChat.ui.chat.Source):CopilotChat.client.Resource[]
 

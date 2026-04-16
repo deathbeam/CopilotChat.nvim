@@ -99,9 +99,9 @@ end
 ---@field content string
 
 ---@class CopilotChat.ui.chat.Section
----@field start_line number
----@field end_line number
----@field blocks table<CopilotChat.ui.chat.Block>
+---@field start_line integer
+---@field end_line integer
+---@field blocks CopilotChat.ui.chat.Block[]
 
 ---@class CopilotChat.ui.chat.Message : CopilotChat.client.Message
 ---@field id string?
@@ -113,7 +113,7 @@ end
 --- @field cwd fun():string
 
 ---@class CopilotChat.ui.chat.Chat : CopilotChat.ui.overlay.Overlay
----@field winnr number?
+---@field winnr integer?
 ---@field config CopilotChat.config.Shared
 ---@field token_count number?
 ---@field token_max_count number?
@@ -125,7 +125,7 @@ end
 ---@field private chat_overlay CopilotChat.ui.overlay.Overlay
 ---@field private last_changedtick number?
 ---@field private source CopilotChat.ui.chat.Source
----@field private sticky table<string>
+---@field private sticky string[]
 local Chat = class(function(self, config, on_buf_create)
   Overlay.init(self, 'copilot-chat', utils.key_to_info('show_help', config.mappings.show_help), on_buf_create)
 
@@ -243,7 +243,7 @@ function Chat:get_block(role, cursor)
 end
 
 --- Get list of all chat messages
----@return table<CopilotChat.ui.chat.Message>
+---@return CopilotChat.ui.chat.Message[]
 function Chat:get_messages()
   self:parse()
   return self.messages:values()
@@ -269,7 +269,12 @@ function Chat:get_message(role, cursor)
     for _, message in ipairs(messages) do
       local section = message.section
       local matches_role = not role or message.role == role
-      if matches_role and section.start_line <= cursor_line and section.start_line > max_line_below_cursor then
+      if
+        matches_role
+        and section
+        and section.start_line <= cursor_line
+        and section.start_line > max_line_below_cursor
+      then
         max_line_below_cursor = section.start_line
         closest_message = message
       end
@@ -288,13 +293,13 @@ function Chat:get_message(role, cursor)
 end
 
 --- Get the current sticky array.
----@return table<string>
+---@return string[]
 function Chat:get_sticky()
   return self.sticky
 end
 
 --- Set the sticky array.
----@param sticky table<string>
+---@param sticky string[]
 function Chat:set_sticky(sticky)
   self.sticky = sticky
 end

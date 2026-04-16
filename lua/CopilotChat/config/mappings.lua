@@ -290,7 +290,6 @@ return {
       async.run(function()
         local config, prompt = prompts.resolve_prompt(message.content)
         local system_prompt = config.system_prompt
-        local resolved_resources = prompts.resolve_functions(prompt, config)
         local selected_tools = prompts.resolve_tools(prompt, config)
         local selected_model = prompts.resolve_model(prompt, config)
         local infos = client:info()
@@ -354,28 +353,6 @@ return {
             table.insert(lines, line)
           end
           table.insert(lines, '````')
-          table.insert(lines, '')
-        end
-
-        if not utils.empty(resolved_resources) then
-          table.insert(lines, '**Resources**')
-          table.insert(lines, '')
-        end
-
-        for _, resource in ipairs(resolved_resources) do
-          local resource_lines = vim.split(resource.data, '\n')
-          local preview = vim.list_slice(resource_lines, 1, math.min(10, #resource_lines))
-          local header = string.format('**%s** (%s lines)', resource.name or resource.uri, #resource_lines)
-          if #resource_lines > 10 then
-            header = header .. ' (truncated)'
-          end
-
-          table.insert(lines, header)
-          table.insert(lines, '```' .. files.mimetype_to_filetype(resource.mimetype))
-          for _, line in ipairs(preview) do
-            table.insert(lines, line)
-          end
-          table.insert(lines, '```')
           table.insert(lines, '')
         end
 

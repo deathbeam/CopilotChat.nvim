@@ -2,7 +2,7 @@ local utils = require('CopilotChat.utils')
 local class = require('CopilotChat.utils.class')
 
 ---@class CopilotChat.ui.overlay.Overlay : Class
----@field bufnr number?
+---@field bufnr integer?
 ---@field protected name string
 ---@field protected help string
 ---@field private cursor integer[]?
@@ -23,11 +23,11 @@ end)
 
 --- Show the overlay buffer
 ---@param text string
----@param winnr number
+---@param winnr integer
 ---@param filetype? string
 ---@param syntax string?
----@param on_show? fun(bufnr: number)
----@param on_hide? fun(bufnr: number)
+---@param on_show? fun(bufnr: integer)
+---@param on_hide? fun(bufnr: integer)
 function Overlay:show(text, winnr, filetype, syntax, on_show, on_hide)
   if not text or text == '' then
     return
@@ -75,7 +75,7 @@ function Overlay:delete()
 end
 
 --- Create the overlay buffer
----@return number
+---@return integer
 ---@protected
 function Overlay:create()
   local bufnr = vim.api.nvim_create_buf(false, true)

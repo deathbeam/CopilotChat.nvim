@@ -19,7 +19,7 @@ https://github.com/user-attachments/assets/8cad5643-63b2-4641-a5c4-68bc313f20e6
 CopilotChat.nvim brings GitHub Copilot Chat capabilities directly into Neovim with a focus on transparency and user control.
 
 - 🤖 **Multiple AI Models** - GitHub Copilot (including GPT-4o, Gemini 2.5 Pro, Claude 4 Sonnet, Claude 3.7 Sonnet, Claude 3.5 Sonnet, o3-mini, o4-mini) + custom providers (Ollama, Mistral.ai). The exact list of available models depends on your [GitHub Copilot settings](https://github.com/settings/copilot/features) and the models provided by GitHub's API.
-- 🔧 **Tool Calling** - LLM can call workspace functions (file reading, git operations, search) with your explicit approval
+- 🔧 **Tool Calling** - LLM can call workspace functions (file reading, git operations, search) with manual approval or automatic execution for trusted tools
 - 🔒 **Privacy First** - Only shares what you explicitly request - no background data collection
 - 📝 **Interactive Chat** - Interactive UI with completion, diffs, and quickfix integration
 - 🎯 **Smart Prompts** - Composable templates and sticky prompts for consistent context
@@ -92,7 +92,7 @@ EOF
 # Core Concepts
 
 - **Resources** (`#<name>`) - Add specific content (files, git diffs, URLs) to your prompt
-- **Tools** (`@<name>`) - Give LLM access to functions it can call with your approval
+- **Tools** (`@<name>`) - Give LLM access to functions it can call during the chat, with manual approval by default
 - **Sticky Prompts** (`> <text>`) - Persist context across single chat session
 - **Models** (`$<model>`) - Specify which AI model to use for the chat
 - **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
@@ -114,7 +114,15 @@ EOF
 > You are a helpful coding assistant
 ```
 
-When you use `@copilot`, the LLM can call functions like `bash`, `edit`, `file`, `glob`, `grep`, `gitdiff` etc. You'll see the proposed function call and can approve/reject it before execution.
+When you use `@copilot`, the LLM can call functions from the `copilot` group such as `bash`, `edit`, `file`, `glob`, `grep`, and `gitdiff`.
+
+- By default, proposed tool calls wait for your approval.
+- You can configure `trusted_tools` to automatically run specific tools or groups.
+- Resources added with `#...` are resolved immediately and shared as context.
+- Tool call results are sent back to the model as plain output, while manual resources keep their `##<uri>` references in chat.
+
+> [!WARNING]
+> `trusted_tools = true` allows the model to run every enabled tool without asking. Only use it if you fully trust the tool set and workspace.
 
 # Usage
 
@@ -136,21 +144,20 @@ When you use `@copilot`, the LLM can call functions like `bash`, `edit`, `file`,
 
 ## Chat Key Mappings
 
-| Insert  | Normal  | Action                                     |
-| ------- | ------- | ------------------------------------------ |
-| `<Tab>` | -       | Trigger/accept completion menu for tokens  |
-| `<C-c>` | `q`     | Close the chat window                      |
-| `<C-l>` | `<C-l>` | Reset and clear the chat window            |
-| `<C-s>` | `<CR>`  | Submit the current prompt                  |
-| -       | `grr`   | Toggle sticky prompt for line under cursor |
-| `<C-y>` | `<C-y>` | Accept nearest diff                        |
-| -       | `gj`    | Jump to section of nearest diff            |
-| -       | `gqa`   | Add all answers from chat to quickfix list |
-| -       | `gqd`   | Add all diffs from chat to quickfix list   |
-| -       | `gy`    | Yank nearest diff to register              |
-| -       | `gd`    | Show diff between source and nearest diff  |
-| -       | `gc`    | Show info about current chat               |
-| -       | `gh`    | Show help message                          |
+| Insert  | Normal  | Action                                    |
+| ------- | ------- | ----------------------------------------- |
+| `<Tab>` | -       | Trigger/accept completion menu for tokens |
+| `<C-c>` | `q`     | Close the chat window                     |
+| `<C-l>` | `<C-l>` | Reset and clear the chat window           |
+| `<C-s>` | `<CR>`  | Submit the current prompt                 |
+| `<C-y>` | `<C-y>` | Accept nearest diff                       |
+| -       | `gj`    | Jump to section of nearest diff           |
+| -       | `gqa`   | Add all answers from chat to quickfix     |
+| -       | `gqd`   | Add all diffs from chat to quickfix       |
+| -       | `gy`    | Yank nearest diff to register             |
+| -       | `gd`    | Show diff between source and nearest diff |
+| -       | `gc`    | Show info about current chat              |
+| -       | `gh`    | Show help message                         |
 
 > [!WARNING]
 > Some plugins (e.g. `copilot.vim`) may also map common keys like `<Tab>` in insert mode.  
@@ -167,23 +174,24 @@ When you use `@copilot`, the LLM can call functions like `bash`, `edit`, `file`,
 
 All predefined functions belong to the `copilot` group.
 
-| Function    | Type     | Description                                            | Example Usage        |
-| ----------- | -------- | ------------------------------------------------------ | -------------------- |
-| `bash`      | Tool     | Executes a bash command and returns output             | `@copilot` only      |
-| `buffer`    | Resource | Retrieves content from buffer(s) with diagnostics      | `#buffer:active`     |
-| `clipboard` | Resource | Provides access to system clipboard content            | `#clipboard`         |
-| `edit`      | Tool     | Applies a unified diff to a file                       | `@copilot` only      |
-| `file`      | Resource | Reads content from a specified file path               | `#file:path/to/file` |
-| `gitdiff`   | Resource | Retrieves git diff information                         | `#gitdiff:staged`    |
-| `glob`      | Resource | Lists filenames matching a pattern in workspace        | `#glob:**/*.lua`     |
-| `grep`      | Resource | Searches for a pattern across files in workspace       | `#grep:TODO`         |
-| `selection` | Resource | Includes the current visual selection with diagnostics | `#selection`         |
-| `url`       | Resource | Fetches content from a specified URL                   | `#url:https://...`   |
+| Function    | Manual `#...` | Description                                            | Example Usage        |
+| ----------- | ------------- | ------------------------------------------------------ | -------------------- |
+| `bash`      | No            | Executes a bash command and returns output             | `@copilot`           |
+| `buffer`    | Yes           | Retrieves content from buffer(s) with diagnostics      | `#buffer:active`     |
+| `clipboard` | Yes           | Provides access to system clipboard content            | `#clipboard`         |
+| `edit`      | No            | Applies a unified diff to a file                       | `@copilot`           |
+| `file`      | Yes           | Reads content from a specified file path               | `#file:path/to/file` |
+| `gitdiff`   | Yes           | Retrieves git diff information                         | `#gitdiff:staged`    |
+| `glob`      | Yes           | Lists filenames matching a pattern in workspace        | `#glob:**/*.lua`     |
+| `grep`      | Yes           | Searches for a pattern across files in workspace       | `#grep:TODO`         |
+| `selection` | Yes           | Includes the current visual selection with diagnostics | `#selection`         |
+| `url`       | Yes           | Fetches content from a specified URL                   | `#url:https://...`   |
 
-**Type Legend:**
+`#...` resolves a function immediately and adds its output as chat context.
 
-- **Resource**: Can be used manually via `#function` syntax
-- **Tool**: Can only be called by LLM via `@copilot` (for safety/complexity reasons)
+`@copilot` shares the enabled functions with the model so it can choose when to call them.
+
+Only `bash` and `edit` are tool-only. The rest can be used both as manual resources and as callable tools.
 
 ## Predefined Prompts
 
@@ -209,6 +217,7 @@ Most users only need to configure a few options:
 {
   model = 'gpt-4.1',           -- AI model to use
   temperature = 0.1,           -- Lower = focused, higher = creative
+  trusted_tools = nil,         -- Require approval for all tool calls
   window = {
     layout = 'vertical',       -- 'vertical', 'horizontal', 'float'
     width = 0.5,              -- 50% of screen width
@@ -241,12 +250,14 @@ Most users only need to configure a few options:
 }
 ```
 
+`window.layout` also supports `'replace'` to reuse the current window.
+
 ## Buffer Behavior
 
 ```lua
 -- Auto-command to customize chat buffer behavior
 vim.api.nvim_create_autocmd('BufEnter', {
-  pattern = 'copilot-*',
+  pattern = 'copilot-chat',
   callback = function()
     vim.opt_local.relativenumber = false
     vim.opt_local.number = false
@@ -278,6 +289,7 @@ Types of copilot highlights:
 - `CopilotChatModel` - Model highlight in chat buffer (e.g. `$gpt-4.1`)
 - `CopilotChatUri` - URI highlight in chat buffer (e.g. `##https://...`)
 - `CopilotChatAnnotation` - Annotation highlight in chat buffer (file headers, tool call headers, tool call body)
+- `CopilotChatAnnotationHeader` - Annotation header highlight in chat buffer
 
 ## Prompts
 
@@ -304,14 +316,44 @@ Define your own prompts in the configuration:
 
 ## Functions
 
+Use `trusted_tools` to control which tool calls are executed automatically:
+
+```lua
+{
+  trusted_tools = nil, -- default: require approval for all tool calls
+
+  -- trust all functions in a group
+  -- trusted_tools = 'copilot',
+
+  -- trust specific functions by name or groups by name
+  -- trusted_tools = { 'file', 'glob', 'grep' },
+
+  -- trust every enabled tool call
+  -- trusted_tools = true,
+}
+```
+
+A tool is trusted when any of these match:
+
+- Its function definition sets `trusted = true`
+- Its function name appears in `trusted_tools`
+- Its function group appears in `trusted_tools`
+- `trusted_tools = true`
+
+For most setups, trusting a few read-only functions such as `file`, `glob`, or `grep` is safer than trusting everything.
+
+> [!WARNING]
+> Trusted tools run without asking for confirmation. Be especially careful with tools like `bash` and `edit`, which can change your workspace.
+
 Define your own functions in the configuration with input handling and schema:
 
 ```lua
 {
   functions = {
     birthday = {
-      description = "Retrieves birthday information for a person",
-      uri = "birthday://{name}",
+      description = 'Retrieves birthday information for a person',
+      uri = 'birthday://{name}',
+      trusted = false,
       schema = {
         type = 'object',
         required = { 'name' },
@@ -329,13 +371,15 @@ Define your own functions in the configuration with input handling and schema:
             uri = 'birthday://' .. input.name,
             mimetype = 'text/plain',
             data = input.name .. ' birthday info',
-          }
+          },
         }
-      end
-    }
+      end,
+    },
   }
 }
 ```
+
+If a function has a `uri`, it can be used manually with `#birthday:Alice`. Functions without a `uri` are tool-only and can only be called by the model.
 
 ## Providers
 
@@ -345,9 +389,9 @@ Add custom AI providers:
 {
   providers = {
     my_provider = {
-      get_url = function(opts) return "https://api.example.com/chat" end,
-      get_headers = function() return { ["Authorization"] = "Bearer " .. api_key } end,
-      get_models = function() return { { id = "gpt-4.1", name = "GPT-4.1 model" } } end,
+      get_url = function(opts) return 'https://api.example.com/chat' end,
+      get_headers = function() return { ['Authorization'] = 'Bearer ' .. api_key } end,
+      get_models = function() return { { id = 'gpt-4.1', name = 'GPT-4.1 model' } } end,
       prepare_input = require('CopilotChat.config.providers').copilot.prepare_input,
       prepare_output = require('CopilotChat.config.providers').copilot.prepare_output,
     }
@@ -363,7 +407,7 @@ Add custom AI providers:
   disabled?: boolean,
 
   -- Optional: Extra info about the provider displayed in info panel
-  get_info?(): string[]
+  get_info?(headers: table): string[]
 
   -- Optional: Get extra request headers with optional expiration time
   get_headers?(): table<string,string>, number?,
@@ -379,20 +423,23 @@ Add custom AI providers:
 
   -- Optional: Get available models
   get_models?(headers: table): table<CopilotChat.Provider.model>,
+
+  -- Optional: Resolve a user-facing model id to a provider model id
+  resolve_model?(headers: table, model: string): string,
 }
 ```
 
 **Built-in providers:**
 
 - `copilot` - GitHub Copilot (default)
-- `github_models` - GitHub Marketplace models (disabled by default)
+- `github_models` - GitHub Models (disabled by default)
 
 # API Reference
 
 ## Core
 
 ```lua
-local chat = require("CopilotChat")
+local chat = require('CopilotChat')
 
 -- Basic Chat Functions
 chat.ask(prompt, config)      -- Ask a question with optional config
@@ -422,7 +469,7 @@ chat.log_level(level)         -- Set log level (debug, info, etc.)
 You can also access the chat window UI methods through the `chat.chat` object:
 
 ```lua
-local window = require("CopilotChat").chat
+local window = require('CopilotChat').chat
 
 -- Chat UI State
 window:visible()             -- Check if chat window is visible
@@ -441,8 +488,8 @@ window:start()               -- Start writing to chat window
 window:finish()              -- Finish writing to chat window
 
 -- Source Management
-window.get_source()          -- Get the current source buffer and window
-window.set_source(winnr)     -- Set the source window
+window:get_source()          -- Get the current source buffer and window
+window:set_source(winnr)     -- Set the source window
 
 -- Navigation
 window:follow()              -- Move cursor to end of chat content
@@ -455,10 +502,11 @@ window:overlay(opts)         -- Show overlay with specified options
 ## Prompt parser
 
 ```lua
-local parser = require("CopilotChat.prompts")
+local parser = require('CopilotChat.prompts')
 
 parser.resolve_prompt()         -- Resolve prompt references
-parser.resolve_tools()          -- Resolve tools that are available for automatic use by LLM
+parser.resolve_tools()          -- Resolve tools shared with the model via @...
+parser.resolve_functions()      -- Resolve manual function/resource references via #...
 parser.resolve_model()          -- Resolve model from prompt (WARN: async, requires plenary.async.run)
 ```
 
@@ -466,22 +514,26 @@ parser.resolve_model()          -- Resolve model from prompt (WARN: async, requi
 
 ```lua
 -- Open chat, ask a question and handle response
-require("CopilotChat").open()
-require("CopilotChat").ask("#buffer Explain this code", {
+require('CopilotChat').open()
+require('CopilotChat').ask('#buffer Explain this code', {
   callback = function(response)
-    vim.notify("Got response: " .. response:sub(1, 50) .. "...")
-    return response
+    vim.notify('Got response: ' .. vim.trim(response.content):sub(1, 50) .. '...')
   end,
 })
 
 -- Save and load chat history
-require("CopilotChat").save("my_debugging_session")
-require("CopilotChat").load("my_debugging_session")
+require('CopilotChat').save('my_debugging_session')
+require('CopilotChat').load('my_debugging_session')
 
 -- Use custom sticky and model
-require("CopilotChat").ask("How can I optimize this?", {
-  model = "gpt-4.1",
-  sticky = {"#buffer", "#gitdiff:staged"}
+require('CopilotChat').ask('How can I optimize this?', {
+  model = 'gpt-4.1',
+  sticky = { '#buffer', '#gitdiff:staged' },
+})
+
+-- Automatically trust a small read-only tool set
+require('CopilotChat').setup({
+  trusted_tools = { 'file', 'glob', 'grep' },
 })
 ```
 
@@ -510,6 +562,12 @@ To run tests:
 
 ```bash
 make test
+```
+
+To run the same formatting check as CI:
+
+```bash
+stylua --check .
 ```
 
 ## Contributing
