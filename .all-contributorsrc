@@ -515,6 +515,13 @@
       "avatar_url": "https://avatars.githubusercontent.com/u/270346599?v=4",
       "profile": "https://github.com/sirjls",
       "contributions": ["code"]
+    },
+    {
+      "login": "kolchurinvv",
+      "name": "Vladimir Kolchurin",
+      "avatar_url": "https://avatars.githubusercontent.com/u/18503099?v=4",
+      "profile": "https://github.com/kolchurinvv",
+      "contributions": ["code"]
     }
   ],
   "contributorsPerLine": 7,
