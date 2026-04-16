@@ -1,4 +1,4 @@
-local notify = require('CopilotChat.notify')
+local notify = require('CopilotChat.utils.notify')
 local utils = require('CopilotChat.utils')
 local curl = require('CopilotChat.utils.curl')
 local class = require('CopilotChat.utils.class')

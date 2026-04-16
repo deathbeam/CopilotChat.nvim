@@ -111,22 +111,17 @@ Go to the CopilotChat.nvim in your GitHub account, select your branch, and click
 
 - [utils.lua](/lua/CopilotChat/utils.lua): General utility functions.
 
-- [utils/](/lua/CopilotChat/utils/): Utility modules —
+- [utils/](/lua/CopilotChat/utils/): Utility modules
   [class.lua](/lua/CopilotChat/utils/class.lua) (OOP helper),
   [curl.lua](/lua/CopilotChat/utils/curl.lua) (HTTP requests),
-  [diff.lua](/lua/CopilotChat/utils/diff.lua) (unified diff parsing and
-  application),
-  [files.lua](/lua/CopilotChat/utils/files.lua) (file I/O and filetype
-  detection),
-  [orderedmap.lua](/lua/CopilotChat/utils/orderedmap.lua) (insertion-ordered
-  map),
-  [stringbuffer.lua](/lua/CopilotChat/utils/stringbuffer.lua) (efficient string
-  concatenation).
+  [diff.lua](/lua/CopilotChat/utils/diff.lua) (unified diff parsing and application),
+  [files.lua](/lua/CopilotChat/utils/files.lua) (file I/O and filetype detection),
+  [notify.lua](/lua/CopilotChat/utils/notify.lua) (pub/sub notification system for status and message events)
+  [orderedmap.lua](/lua/CopilotChat/utils/orderedmap.lua) (insertion-ordered map),
+  [stringbuffer.lua](/lua/CopilotChat/utils/stringbuffer.lua) (efficient string concatenation).
 
 ### Other
 
 - [health.lua](/lua/CopilotChat/health.lua): `:checkhealth` integration.
   Verifies commands, libraries, and Treesitter parsers.
 
-- [notify.lua](/lua/CopilotChat/notify.lua): Pub/sub notification system for
-  status and message events.
