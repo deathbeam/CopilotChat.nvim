@@ -120,20 +120,20 @@ EOF
 
 ## Chat Key Mappings
 
-| Insert  | Normal  | Action                                              |
-| ------- | ------- | --------------------------------------------------- |
+| Insert  | Normal  | Action                                               |
+| ------- | ------- | ---------------------------------------------------- |
 | `<Tab>` | -       | **Autocomplete resources/files/options** (use this!) |
-| `<C-c>` | `q`     | Close the chat window                               |
-| `<C-l>` | `<C-l>` | Reset and clear the chat window                     |
-| `<C-s>` | `<CR>`  | Submit the current prompt                           |
-| `<C-y>` | `<C-y>` | Accept nearest diff                                 |
-| -       | `gj`    | Jump to section of nearest diff                     |
-| -       | `gqa`   | Add all answers from chat to quickfix               |
-| -       | `gqd`   | Add all diffs from chat to quickfix                 |
-| -       | `gy`    | Yank nearest diff to register                       |
-| -       | `gd`    | Show diff between source and nearest diff           |
-| -       | `gc`    | Show info about current chat                        |
-| -       | `gh`    | Show help message                                   |
+| `<C-c>` | `q`     | Close the chat window                                |
+| `<C-l>` | `<C-l>` | Reset and clear the chat window                      |
+| `<C-s>` | `<CR>`  | Submit the current prompt                            |
+| `<C-y>` | `<C-y>` | Accept nearest diff                                  |
+| -       | `gj`    | Jump to section of nearest diff                      |
+| -       | `gqa`   | Add all answers from chat to quickfix                |
+| -       | `gqd`   | Add all diffs from chat to quickfix                  |
+| -       | `gy`    | Yank nearest diff to register                        |
+| -       | `gd`    | Show diff between source and nearest diff            |
+| -       | `gc`    | Show info about current chat                         |
+| -       | `gh`    | Show help message                                    |
 
 **💡 Pro tip:** After typing `#`, `@`, `#buffer:`, or `#file:`, press `<Tab>` to see available options. This is the fastest way to work!
 
@@ -153,18 +153,18 @@ EOF
 
 All predefined functions belong to the `copilot` group.
 
-| Function    | Manual `#...` | Description                                            | Available Options                                                          |
-| ----------- | ------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- |
-| `bash`      | No            | Executes a bash command and returns output             | Tool-only (use `@copilot`)                                                 |
-| `buffer`    | Yes           | Retrieves content from buffer(s) with diagnostics      | `active`, `visible`, `listed`, `quickfix`, buffer number, or filename      |
-| `clipboard` | Yes           | Provides access to system clipboard content            | No options                                                                 |
-| `edit`      | No            | Applies a unified diff to a file                       | Tool-only (use `@copilot`)                                                 |
-| `file`      | Yes           | Reads content from a specified file path               | Any file path (use `<Tab>` for completion)                                 |
-| `gitdiff`   | Yes           | Retrieves git diff information                         | `unstaged` (default), `staged`, or commit SHA                              |
-| `glob`      | Yes           | Lists filenames matching a pattern in workspace        | Any glob pattern (default: `**/*`)                                         |
-| `grep`      | Yes           | Searches for a pattern across files in workspace       | Any search pattern                                                         |
-| `selection` | Yes           | Includes the current visual selection with diagnostics | No options                                                                 |
-| `url`       | Yes           | Fetches content from a specified URL                   | Any HTTPS URL                                                              |
+| Function    | Manual `#...` | Description                                            | Available Options                                                     |
+| ----------- | ------------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `bash`      | No            | Executes a bash command and returns output             | Tool-only (use `@copilot`)                                            |
+| `buffer`    | Yes           | Retrieves content from buffer(s) with diagnostics      | `active`, `visible`, `listed`, `quickfix`, buffer number, or filename |
+| `clipboard` | Yes           | Provides access to system clipboard content            | No options                                                            |
+| `edit`      | No            | Applies a unified diff to a file                       | Tool-only (use `@copilot`)                                            |
+| `file`      | Yes           | Reads content from a specified file path               | Any file path (use `<Tab>` for completion)                            |
+| `gitdiff`   | Yes           | Retrieves git diff information                         | `unstaged` (default), `staged`, or commit SHA                         |
+| `glob`      | Yes           | Lists filenames matching a pattern in workspace        | Any glob pattern (default: `**/*`)                                    |
+| `grep`      | Yes           | Searches for a pattern across files in workspace       | Any search pattern                                                    |
+| `selection` | Yes           | Includes the current visual selection with diagnostics | No options                                                            |
+| `url`       | Yes           | Fetches content from a specified URL                   | Any HTTPS URL                                                         |
 
 - **`#<function>`** - Embeds output directly in your message (e.g., `#buffer:listed`, `#file:src/main.lua`)
 - **`@<function/group>`** - Makes function(s) available for LLM to call when needed (e.g., `@copilot`, `@file`)
@@ -185,21 +185,27 @@ All predefined functions belong to the `copilot` group.
 
 ```markdown
 # Current buffer
+
 #buffer:active
 
 # All open buffers (replaces old #buffers)
+
 #buffer:listed
 
 # All visible buffers
+
 #buffer:visible
 
 # Specific file
+
 #file:src/main.lua
 
 # Git changes
+
 #gitdiff:staged
 
 # URL content
+
 #url:https://example.com/docs
 ```
 
@@ -209,12 +215,14 @@ When you use `@copilot`, the LLM can call functions from the `copilot` group suc
 
 ```markdown
 # Give LLM access to workspace tools
+
 @copilot What files are in this project?
 
 # Sticky context with tools
+
 > #buffer:listed
 > @copilot
-Refactor the authentication code
+> Refactor the authentication code
 ```
 
 By default, tool calls require manual approval. Configure `trusted_tools` to automatically run specific tools (see [Functions](#functions)).
@@ -353,6 +361,7 @@ Use `trusted_tools` to control which tool calls are executed automatically:
 **How tool trust works:**
 
 A tool is trusted when any of these match:
+
 - Its function definition sets `trusted = true`
 - Its function name appears in `trusted_tools`
 - Its function group appears in `trusted_tools`
