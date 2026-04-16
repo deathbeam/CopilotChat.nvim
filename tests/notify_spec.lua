@@ -1,4 +1,4 @@
-local notify = require('CopilotChat.notify')
+local notify = require('CopilotChat.utils.notify')
 
 describe('CopilotChat.notify', function()
   before_each(function()

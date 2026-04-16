@@ -55,7 +55,7 @@
 
 local log = require('plenary.log')
 local constants = require('CopilotChat.constants')
-local notify = require('CopilotChat.notify')
+local notify = require('CopilotChat.utils.notify')
 local tiktoken = require('CopilotChat.tiktoken')
 local utils = require('CopilotChat.utils')
 local curl = require('CopilotChat.utils.curl')

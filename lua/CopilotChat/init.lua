@@ -816,7 +816,7 @@ function M.setup(config)
   end)
 
   -- Initialize chat
-  require('CopilotChat.notify').clear()
+  require('CopilotChat.utils.notify').clear()
   if M.chat then
     M.chat:close()
     M.chat:delete()
