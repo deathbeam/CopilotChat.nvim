@@ -19,6 +19,7 @@
 ---@field tools string|table<string>|nil
 ---@field resources string|table<string>|nil
 ---@field sticky string|table<string>|nil
+---@field trusted_tools boolean|string|table<string>|nil
 ---@field diff 'block'|'unified'?
 ---@field language string?
 ---@field temperature number?
@@ -64,6 +65,7 @@ return {
   tools = nil, -- Default tool or array of tools (or groups) to share with LLM (can be specified manually in prompt via @).
   resources = 'selection', -- Default resources to share with LLM (can be specified manually in prompt via #).
   sticky = nil, -- Default sticky prompt or array of sticky prompts to use at start of every new chat (can be specified manually in prompt via >).
+  trusted_tools = nil, -- Trust tool calls from specific functions or groups, or all trusted tools when true (e.g., {'buffer', 'file'} or 'copilot').
   diff = 'block', -- Default diff format to use, 'block' or 'unified'.
   language = 'English', -- Default language to use for answers
 

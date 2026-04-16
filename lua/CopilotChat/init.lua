@@ -2,6 +2,7 @@ local async = require('plenary.async')
 local log = require('plenary.log')
 local client = require('CopilotChat.client')
 local constants = require('CopilotChat.constants')
+local functions = require('CopilotChat.functions')
 local prompts = require('CopilotChat.prompts')
 local select = require('CopilotChat.select')
 local utils = require('CopilotChat.utils')
@@ -29,6 +30,37 @@ local M = setmetatable({}, {
     return rawget(t, key)
   end,
 })
+
+---@param config CopilotChat.config.Shared
+---@param tool_name string
+---@return boolean
+local function is_trusted_tool(config, tool_name)
+  local tool_spec = config.functions[tool_name]
+  if not tool_spec then
+    return false
+  end
+
+  if tool_spec.trusted then
+    return true
+  end
+
+  local trusted_tools = config.trusted_tools
+  if trusted_tools == true then
+    return true
+  end
+
+  for _, trusted_pattern in ipairs(utils.to_table(trusted_tools)) do
+    if tool_name == trusted_pattern then
+      return true
+    end
+
+    if tool_spec.group == trusted_pattern then
+      return true
+    end
+  end
+
+  return false
+end
 
 --- Process sticky values from prompt and config
 --- Extracts stickies from prompt, adds config-based stickies, stores them, returns clean prompt
@@ -116,7 +148,7 @@ end
 
 --- Finish writing to chat buffer.
 ---@param start_of_chat boolean?
-local function finish(start_of_chat)
+local function finish(start_of_chat, remaining_tool_calls)
   if start_of_chat then
     local sticky = {}
     if M.config.sticky then
@@ -128,8 +160,11 @@ local function finish(start_of_chat)
   end
 
   local prompt_content = ''
-  local assistant_message = M.chat:get_message(constants.ROLE.ASSISTANT)
-  local tool_calls = assistant_message and assistant_message.tool_calls or {}
+  local tool_calls = remaining_tool_calls
+  if not tool_calls then
+    local assistant_message = M.chat:get_message(constants.ROLE.ASSISTANT)
+    tool_calls = assistant_message and assistant_message.tool_calls or {}
+  end
 
   local current_sticky = M.chat:get_sticky()
   if not utils.empty(current_sticky) then
@@ -430,15 +465,8 @@ function M.ask(prompt, config)
       config, prompt = prompts.resolve_prompt(prompt, config)
       local system_prompt = config.system_prompt or ''
       local selected_tools, prompt = prompts.resolve_tools(prompt, config)
-      local resolved_resources, resolved_tools, resolved_stickies, prompt = prompts.resolve_functions(prompt, config)
+      local resolved_resources, resolved_tools, prompt = prompts.resolve_functions(prompt, config)
       local selected_model, prompt = prompts.resolve_model(prompt, config)
-
-      -- Store resolved stickies to chat
-      local current_sticky = M.chat:get_sticky()
-      for _, sticky in ipairs(resolved_stickies) do
-        table.insert(current_sticky, sticky)
-      end
-      M.chat:set_sticky(current_sticky)
 
       prompt = vim.trim(prompt)
 
@@ -546,6 +574,93 @@ function M.ask(prompt, config)
         M.chat:add_message(response, true)
         M.chat.token_count = token_count
         M.chat.token_max_count = token_max_count
+
+        -- Execute trusted tool calls automatically
+        if response.tool_calls and #response.tool_calls > 0 then
+          local trusted_tool_calls = {}
+          local untrusted_tool_calls = {}
+
+          for _, tool_call in ipairs(response.tool_calls) do
+            if is_trusted_tool(config, tool_call.name) then
+              table.insert(trusted_tool_calls, tool_call)
+            else
+              table.insert(untrusted_tool_calls, tool_call)
+            end
+          end
+
+          if #trusted_tool_calls > 0 then
+            async.run(handle_error(config, function()
+              local trusted_tool_results = {}
+              local source = M.chat:get_source()
+
+              for _, tool_call in ipairs(trusted_tool_calls) do
+                local input = {}
+                if not utils.empty(tool_call.arguments) then
+                  input = utils.json_decode(tool_call.arguments)
+                end
+
+                local ok, output = prompts.execute_tool_call(tool_call.name, input, config, source)
+                local result = prompts.format_tool_output(ok, output)
+
+                table.insert(trusted_tool_results, {
+                  id = tool_call.id,
+                  result = result,
+                })
+              end
+
+              if not utils.empty(trusted_tool_results) then
+                utils.schedule_main()
+                for _, tool in ipairs(trusted_tool_results) do
+                  M.chat:add_message({
+                    id = tool.id,
+                    role = constants.ROLE.TOOL,
+                    tool_call_id = tool.id,
+                    content = '\n' .. tool.result .. '\n',
+                  })
+                end
+
+                if #untrusted_tool_calls > 0 then
+                  finish(nil, untrusted_tool_calls)
+                else
+                  local continue_response = client:ask({
+                    headless = config.headless,
+                    history = M.chat:get_messages(),
+                    resources = resolved_resources,
+                    tools = selected_tools,
+                    system_prompt = system_prompt,
+                    model = selected_model,
+                    temperature = config.temperature,
+                    on_progress = vim.schedule_wrap(function(message)
+                      if not config.headless then
+                        M.chat:add_message(message)
+                      end
+                    end),
+                  })
+
+                  if continue_response then
+                    local continue_message = continue_response.message
+                    continue_message.content = vim.trim(continue_message.content)
+                    if utils.empty(continue_message.content) then
+                      continue_message.content = ''
+                    else
+                      continue_message.content = '\n' .. continue_message.content .. '\n'
+                    end
+
+                    utils.schedule_main()
+                    M.chat:add_message(continue_message, true)
+                    M.chat.token_count = continue_response.token_count
+                    M.chat.token_max_count = continue_response.token_max_count
+                  end
+
+                  finish()
+                end
+              else
+                finish()
+              end
+            end))
+            return
+          end
+        end
 
         finish()
       end
