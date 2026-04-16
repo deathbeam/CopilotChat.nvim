@@ -11,12 +11,13 @@ Table of Contents                              *CopilotChat-table-of-contents*
   - lazy.nvim                                          |CopilotChat-lazy.nvim|
   - vim-plug                                            |CopilotChat-vim-plug|
 2. Core Concepts                                   |CopilotChat-core-concepts|
-  - Examples                                            |CopilotChat-examples|
 3. Usage                                                   |CopilotChat-usage|
   - Commands                                            |CopilotChat-commands|
   - Chat Key Mappings                          |CopilotChat-chat-key-mappings|
   - Predefined Functions                    |CopilotChat-predefined-functions|
   - Predefined Prompts                        |CopilotChat-predefined-prompts|
+  - Resource Usage                                |CopilotChat-resource-usage|
+  - Tool Usage                                        |CopilotChat-tool-usage|
 4. Configuration                                   |CopilotChat-configuration|
   - Quick Setup                                      |CopilotChat-quick-setup|
   - Window & Appearance                      |CopilotChat-window-&-appearance|
@@ -132,34 +133,8 @@ VIM-PLUG                                                *CopilotChat-vim-plug*
 - **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
 
 
-EXAMPLES                                                *CopilotChat-examples*
-
->markdown
-    # Add specific file to context
-    
-    #file:src/main.lua
-    
-    # Give LLM access to workspace tools
-    
-    @copilot What files are in this project?
-    
-    # Sticky prompt that persists
-    
-    > #buffer:active
-    > You are a helpful coding assistant
-<
-
-When you use `@copilot`, the LLM can call functions from the `copilot` group
-such as `bash`, `edit`, `file`, `glob`, `grep`, and `gitdiff`.
-
-- By default, proposed tool calls wait for your approval.
-- You can configure `trusted_tools` to automatically run specific tools or groups.
-- Resources added with `#...` are resolved immediately and shared as context.
-- Tool call results are sent back to the model as plain output, while manual resources keep their `##<uri>` references in chat.
-
-
-  [!WARNING] `trusted_tools = true` allows the model to run every enabled tool
-  without asking. Only use it if you fully trust the tool set and workspace.
+  [!TIP] Press `<Tab>` after typing `#` or `@` to see available options and
+  auto-complete. This is the easiest way to discover what’s available!
 
 ==============================================================================
 3. Usage                                                   *CopilotChat-usage*
@@ -183,72 +158,89 @@ COMMANDS                                                *CopilotChat-commands*
 
 CHAT KEY MAPPINGS                              *CopilotChat-chat-key-mappings*
 
+  -------------------------------------------------------------------------
   Insert   Normal   Action
-  -------- -------- -------------------------------------------
-  <Tab>    -        Trigger/accept completion menu for tokens
-  <C-c>    q        Close the chat window
-  <C-l>    <C-l>    Reset and clear the chat window
-  <C-s>    <CR>     Submit the current prompt
-  <C-y>    <C-y>    Accept nearest diff
-  -        gj       Jump to section of nearest diff
-  -        gqa      Add all answers from chat to quickfix
-  -        gqd      Add all diffs from chat to quickfix
-  -        gy       Yank nearest diff to register
-  -        gd       Show diff between source and nearest diff
-  -        gc       Show info about current chat
-  -        gh       Show help message
+  -------- -------- -------------------------------------------------------
+  <Tab>    -        Autocomplete resources/files/options (use this!)
 
-  [!WARNING] Some plugins (e.g. `copilot.vim`) may also map common keys like
-  `<Tab>` in insert mode. To avoid conflicts, disable Copilot’s default `<Tab>`
-  mapping with:
+  <C-c>    q        Close the chat window
+
+  <C-l>    <C-l>    Reset and clear the chat window
+
+  <C-s>    <CR>     Submit the current prompt
+
+  <C-y>    <C-y>    Accept nearest diff
+
+  -        gj       Jump to section of nearest diff
+
+  -        gqa      Add all answers from chat to quickfix
+
+  -        gqd      Add all diffs from chat to quickfix
+
+  -        gy       Yank nearest diff to register
+
+  -        gd       Show diff between source and nearest diff
+
+  -        gc       Show info about current chat
+
+  -        gh       Show help message
+  -------------------------------------------------------------------------
+**💡 Pro tip:** After typing `#`, `@`, `#buffer:`, or `#file:`, press `<Tab>`
+to see available options. This is the fastest way to work!
+
+
+  [!NOTE] **Tab key not working?** Some plugins (e.g. `copilot.vim`) also map
+  `<Tab>` in insert mode. To fix conflicts, disable the other plugin’s `<Tab>`
+  mapping:
   >lua
+      -- For copilot.vim
       vim.g.copilot_no_tab_map = true
       vim.keymap.set('i', '<S-Tab>', 'copilot#Accept("\\<S-Tab>")', { expr = true, replace_keycodes = false })
   <
-  You can also customize CopilotChat keymaps in your config.
+  Or customize CopilotChat keymaps in your config.
 
 PREDEFINED FUNCTIONS                        *CopilotChat-predefined-functions*
 
 All predefined functions belong to the `copilot` group.
 
-  ----------------------------------------------------------------------------------
-  Function    Manual    Description                             Example Usage
-              #...                                              
-  ----------- --------- --------------------------------------- --------------------
-  bash        No        Executes a bash command and returns     @copilot
-                        output                                  
+  ---------------------------------------------------------------------------------
+  Function    Manual   Description                Available Options
+              #...                                
+  ----------- -------- -------------------------- ---------------------------------
+  bash        No       Executes a bash command    Tool-only (use @copilot)
+                       and returns output         
 
-  buffer      Yes       Retrieves content from buffer(s) with   #buffer:active
-                        diagnostics                             
+  buffer      Yes      Retrieves content from     active, visible, listed,
+                       buffer(s) with diagnostics quickfix, buffer number, or
+                                                  filename
 
-  clipboard   Yes       Provides access to system clipboard     #clipboard
-                        content                                 
+  clipboard   Yes      Provides access to system  No options
+                       clipboard content          
 
-  edit        No        Applies a unified diff to a file        @copilot
+  edit        No       Applies a unified diff to  Tool-only (use @copilot)
+                       a file                     
 
-  file        Yes       Reads content from a specified file     #file:path/to/file
-                        path                                    
+  file        Yes      Reads content from a       Any file path (use <Tab> for
+                       specified file path        completion)
 
-  gitdiff     Yes       Retrieves git diff information          #gitdiff:staged
+  gitdiff     Yes      Retrieves git diff         unstaged (default), staged, or
+                       information                commit SHA
 
-  glob        Yes       Lists filenames matching a pattern in   #glob:**/*.lua
-                        workspace                               
+  glob        Yes      Lists filenames matching a Any glob pattern (default: **/*)
+                       pattern in workspace       
 
-  grep        Yes       Searches for a pattern across files in  #grep:TODO
-                        workspace                               
+  grep        Yes      Searches for a pattern     Any search pattern
+                       across files in workspace  
 
-  selection   Yes       Includes the current visual selection   #selection
-                        with diagnostics                        
+  selection   Yes      Includes the current       No options
+                       visual selection with      
+                       diagnostics                
 
-  url         Yes       Fetches content from a specified URL    #url:https://...
-  ----------------------------------------------------------------------------------
-`#...` resolves a function immediately and adds its output as chat context.
-
-`@copilot` shares the enabled functions with the model so it can choose when to
-call them.
-
-Only `bash` and `edit` are tool-only. The rest can be used both as manual
-resources and as callable tools.
+  url         Yes      Fetches content from a     Any HTTPS URL
+                       specified URL              
+  ---------------------------------------------------------------------------------
+- **#<function>** - Embeds output directly in your message (e.g., `#buffer:listed`, `#file:src/main.lua`)
+- **@<function/group>** - Makes function(s) available for LLM to call when needed (e.g., `@copilot`, `@file`)
 
 
 PREDEFINED PROMPTS                            *CopilotChat-predefined-prompts*
@@ -271,6 +263,59 @@ PREDEFINED PROMPTS                            *CopilotChat-predefined-prompts*
   Commit     Generate commit message with commitizen convention from staged
              changes
   -------------------------------------------------------------------------
+
+RESOURCE USAGE                                    *CopilotChat-resource-usage*
+
+>markdown
+    # Current buffer
+    
+    #buffer:active
+    
+    # All open buffers (replaces old #buffers)
+    
+    #buffer:listed
+    
+    # All visible buffers
+    
+    #buffer:visible
+    
+    # Specific file
+    
+    #file:src/main.lua
+    
+    # Git changes
+    
+    #gitdiff:staged
+    
+    # URL content
+    
+    #url:https://example.com/docs
+<
+
+
+TOOL USAGE                                            *CopilotChat-tool-usage*
+
+When you use `@copilot`, the LLM can call functions from the `copilot` group
+such as `bash`, `edit`, `file`, `glob`, `grep`, and `gitdiff`.
+
+>markdown
+    # Give LLM access to workspace tools
+    
+    @copilot What files are in this project?
+    
+    # Sticky context with tools
+    
+    > #buffer:listed
+    > @copilot
+    > Refactor the authentication code
+<
+
+By default, tool calls require manual approval. Configure `trusted_tools` to
+automatically run specific tools (see |CopilotChat-functions|).
+
+
+  [!WARNING] `trusted_tools = true` allows the model to run every enabled tool
+  without asking. Only use it if you fully trust the tool set and workspace.
 
 ==============================================================================
 4. Configuration                                   *CopilotChat-configuration*
@@ -408,6 +453,8 @@ Use `trusted_tools` to control which tool calls are executed automatically:
     }
 <
 
+**How tool trust works:**
+
 A tool is trusted when any of these match:
 
 - Its function definition sets `trusted = true`
@@ -415,8 +462,8 @@ A tool is trusted when any of these match:
 - Its function group appears in `trusted_tools`
 - `trusted_tools = true`
 
-For most setups, trusting a few read-only functions such as `file`, `glob`, or
-`grep` is safer than trusting everything.
+**Recommended setup:** Trust read-only functions like `file`, `glob`, or `grep`
+for a smoother workflow without compromising safety.
 
 
   [!WARNING] Trusted tools run without asking for confirmation. Be especially
@@ -676,7 +723,7 @@ See CONTRIBUTING.md </CONTRIBUTING.md> for detailed guidelines.
 Thanks goes to these wonderful people (emoji key
 <https://allcontributors.org/docs/en/emoji-key>):
 
-gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻Mani Chandra💻Nischal Basuti📖Teo Ljungberg💻Joe Price💻Yufan You📖 💻Manish Kumar💻Anton Ždanov📖 💻Fredrik Averpil💻Aaron D Borden💻Md. Iftakhar Awal Chowdhury💻 📖Danilo Horta💻Mihamina Rakotomandimby📖 💻Ajmal S💻Samiul Islam💻Rui Costa💻CTCHEN💻Tobias Wölfel💻Alexander Garcia💻Max Kharandziuk💻Xinyu Xiang💻junqizhang💻Calum Lynch💻sirjls💻This project follows the all-contributors
+gptlang💻 📖Dung Duc Huynh (Kaka)💻 📖Ahmed Haracic💻Trí Thiện Nguyễn💻He Zhizhou💻Guruprakash Rajakkannu💻kristofka💻PostCyberPunk📖Katsuhiko Nishimra💻Erno Hopearuoho💻Shaun Garwood💻neutrinoA4💻 📖Jack Muratore💻Adriel Velazquez💻 📖Tomas Slusny💻 📖Nisal📖Tobias Gårdhus📖Petr Dlouhý📖Dylan Madisetti💻Aaron Weisberg💻 📖Jose Tlacuilo💻 📖Kevin Traver💻 📖dTry💻Arata Furukawa💻Ling💻Ivan Frolov💻Folke Lemaitre💻 📖GitMurf💻Dmitrii Lipin💻jinzhongjia📖guill💻Sjon-Paul Brown💻Renzo Mondragón💻 📖fjchen7💻Radosław Woźniak💻JakubPecenka💻thomastthai📖Tomáš Janoušek💻Toddneal Stallworth📖Sergey Alexandrov💻Léopold Mebazaa💻JunKi Jin💻abdennourzahaf📖Josiah💻Tony Fischer💻 📖Kohei Wada💻Sebastian Yaghoubi📖johncming💻Rokas Brazdžionis💻Sola📖 💻Mani Chandra💻Nischal Basuti📖Teo Ljungberg💻Joe Price💻Yufan You📖 💻Manish Kumar💻Anton Ždanov📖 💻Fredrik Averpil💻Aaron D Borden💻Md. Iftakhar Awal Chowdhury💻 📖Danilo Horta💻Mihamina Rakotomandimby📖 💻Ajmal S💻Samiul Islam💻Rui Costa💻CTCHEN💻Tobias Wölfel💻Alexander Garcia💻Max Kharandziuk💻Xinyu Xiang💻junqizhang💻Calum Lynch💻sirjls💻Vladimir Kolchurin💻This project follows the all-contributors
 <https://github.com/all-contributors/all-contributors> specification.
 Contributions of any kind are welcome!
 
