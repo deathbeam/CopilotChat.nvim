@@ -97,32 +97,8 @@ EOF
 - **Models** (`$<model>`) - Specify which AI model to use for the chat
 - **Prompts** (`/PromptName`) - Use predefined prompt templates for common tasks
 
-## Examples
-
-```markdown
-# Add specific file to context
-
-#file:src/main.lua
-
-# Give LLM access to workspace tools
-
-@copilot What files are in this project?
-
-# Sticky prompt that persists
-
-> #buffer:active
-> You are a helpful coding assistant
-```
-
-When you use `@copilot`, the LLM can call functions from the `copilot` group such as `bash`, `edit`, `file`, `glob`, `grep`, and `gitdiff`.
-
-- By default, proposed tool calls wait for your approval.
-- You can configure `trusted_tools` to automatically run specific tools or groups.
-- Resources added with `#...` are resolved immediately and shared as context.
-- Tool call results are sent back to the model as plain output, while manual resources keep their `##<uri>` references in chat.
-
-> [!WARNING]
-> `trusted_tools = true` allows the model to run every enabled tool without asking. Only use it if you fully trust the tool set and workspace.
+> [!TIP]
+> Press `<Tab>` after typing `#` or `@` to see available options and auto-complete. This is the easiest way to discover what's available!
 
 # Usage
 
@@ -144,54 +120,54 @@ When you use `@copilot`, the LLM can call functions from the `copilot` group suc
 
 ## Chat Key Mappings
 
-| Insert  | Normal  | Action                                    |
-| ------- | ------- | ----------------------------------------- |
-| `<Tab>` | -       | Trigger/accept completion menu for tokens |
-| `<C-c>` | `q`     | Close the chat window                     |
-| `<C-l>` | `<C-l>` | Reset and clear the chat window           |
-| `<C-s>` | `<CR>`  | Submit the current prompt                 |
-| `<C-y>` | `<C-y>` | Accept nearest diff                       |
-| -       | `gj`    | Jump to section of nearest diff           |
-| -       | `gqa`   | Add all answers from chat to quickfix     |
-| -       | `gqd`   | Add all diffs from chat to quickfix       |
-| -       | `gy`    | Yank nearest diff to register             |
-| -       | `gd`    | Show diff between source and nearest diff |
-| -       | `gc`    | Show info about current chat              |
-| -       | `gh`    | Show help message                         |
+| Insert  | Normal  | Action                                               |
+| ------- | ------- | ---------------------------------------------------- |
+| `<Tab>` | -       | **Autocomplete resources/files/options** (use this!) |
+| `<C-c>` | `q`     | Close the chat window                                |
+| `<C-l>` | `<C-l>` | Reset and clear the chat window                      |
+| `<C-s>` | `<CR>`  | Submit the current prompt                            |
+| `<C-y>` | `<C-y>` | Accept nearest diff                                  |
+| -       | `gj`    | Jump to section of nearest diff                      |
+| -       | `gqa`   | Add all answers from chat to quickfix                |
+| -       | `gqd`   | Add all diffs from chat to quickfix                  |
+| -       | `gy`    | Yank nearest diff to register                        |
+| -       | `gd`    | Show diff between source and nearest diff            |
+| -       | `gc`    | Show info about current chat                         |
+| -       | `gh`    | Show help message                                    |
 
-> [!WARNING]
-> Some plugins (e.g. `copilot.vim`) may also map common keys like `<Tab>` in insert mode.  
-> To avoid conflicts, disable Copilot's default `<Tab>` mapping with:
+**💡 Pro tip:** After typing `#`, `@`, `#buffer:`, or `#file:`, press `<Tab>` to see available options. This is the fastest way to work!
+
+> [!NOTE]
+> **Tab key not working?** Some plugins (e.g. `copilot.vim`) also map `<Tab>` in insert mode.  
+> To fix conflicts, disable the other plugin's `<Tab>` mapping:
 >
 > ```lua
+> -- For copilot.vim
 > vim.g.copilot_no_tab_map = true
 > vim.keymap.set('i', '<S-Tab>', 'copilot#Accept("\\<S-Tab>")', { expr = true, replace_keycodes = false })
 > ```
 >
-> You can also customize CopilotChat keymaps in your config.
+> Or customize CopilotChat keymaps in your config.
 
 ## Predefined Functions
 
 All predefined functions belong to the `copilot` group.
 
-| Function    | Manual `#...` | Description                                            | Example Usage        |
-| ----------- | ------------- | ------------------------------------------------------ | -------------------- |
-| `bash`      | No            | Executes a bash command and returns output             | `@copilot`           |
-| `buffer`    | Yes           | Retrieves content from buffer(s) with diagnostics      | `#buffer:active`     |
-| `clipboard` | Yes           | Provides access to system clipboard content            | `#clipboard`         |
-| `edit`      | No            | Applies a unified diff to a file                       | `@copilot`           |
-| `file`      | Yes           | Reads content from a specified file path               | `#file:path/to/file` |
-| `gitdiff`   | Yes           | Retrieves git diff information                         | `#gitdiff:staged`    |
-| `glob`      | Yes           | Lists filenames matching a pattern in workspace        | `#glob:**/*.lua`     |
-| `grep`      | Yes           | Searches for a pattern across files in workspace       | `#grep:TODO`         |
-| `selection` | Yes           | Includes the current visual selection with diagnostics | `#selection`         |
-| `url`       | Yes           | Fetches content from a specified URL                   | `#url:https://...`   |
+| Function    | Manual `#...` | Description                                            | Available Options                                                     |
+| ----------- | ------------- | ------------------------------------------------------ | --------------------------------------------------------------------- |
+| `bash`      | No            | Executes a bash command and returns output             | Tool-only (use `@copilot`)                                            |
+| `buffer`    | Yes           | Retrieves content from buffer(s) with diagnostics      | `active`, `visible`, `listed`, `quickfix`, buffer number, or filename |
+| `clipboard` | Yes           | Provides access to system clipboard content            | No options                                                            |
+| `edit`      | No            | Applies a unified diff to a file                       | Tool-only (use `@copilot`)                                            |
+| `file`      | Yes           | Reads content from a specified file path               | Any file path (use `<Tab>` for completion)                            |
+| `gitdiff`   | Yes           | Retrieves git diff information                         | `unstaged` (default), `staged`, or commit SHA                         |
+| `glob`      | Yes           | Lists filenames matching a pattern in workspace        | Any glob pattern (default: `**/*`)                                    |
+| `grep`      | Yes           | Searches for a pattern across files in workspace       | Any search pattern                                                    |
+| `selection` | Yes           | Includes the current visual selection with diagnostics | No options                                                            |
+| `url`       | Yes           | Fetches content from a specified URL                   | Any HTTPS URL                                                         |
 
-`#...` resolves a function immediately and adds its output as chat context.
-
-`@copilot` shares the enabled functions with the model so it can choose when to call them.
-
-Only `bash` and `edit` are tool-only. The rest can be used both as manual resources and as callable tools.
+- **`#<function>`** - Embeds output directly in your message (e.g., `#buffer:listed`, `#file:src/main.lua`)
+- **`@<function/group>`** - Makes function(s) available for LLM to call when needed (e.g., `@copilot`, `@file`)
 
 ## Predefined Prompts
 
@@ -204,6 +180,55 @@ Only `bash` and `edit` are tool-only. The rest can be used both as manual resour
 | `Docs`     | Add documentation comments to selected code                            |
 | `Tests`    | Generate tests for selected code                                       |
 | `Commit`   | Generate commit message with commitizen convention from staged changes |
+
+## Resource Usage
+
+```markdown
+# Current buffer
+
+#buffer:active
+
+# All open buffers (replaces old #buffers)
+
+#buffer:listed
+
+# All visible buffers
+
+#buffer:visible
+
+# Specific file
+
+#file:src/main.lua
+
+# Git changes
+
+#gitdiff:staged
+
+# URL content
+
+#url:https://example.com/docs
+```
+
+## Tool Usage
+
+When you use `@copilot`, the LLM can call functions from the `copilot` group such as `bash`, `edit`, `file`, `glob`, `grep`, and `gitdiff`.
+
+```markdown
+# Give LLM access to workspace tools
+
+@copilot What files are in this project?
+
+# Sticky context with tools
+
+> #buffer:listed
+> @copilot
+> Refactor the authentication code
+```
+
+By default, tool calls require manual approval. Configure `trusted_tools` to automatically run specific tools (see [Functions](#functions)).
+
+> [!WARNING]
+> `trusted_tools = true` allows the model to run every enabled tool without asking. Only use it if you fully trust the tool set and workspace.
 
 # Configuration
 
@@ -333,6 +358,8 @@ Use `trusted_tools` to control which tool calls are executed automatically:
 }
 ```
 
+**How tool trust works:**
+
 A tool is trusted when any of these match:
 
 - Its function definition sets `trusted = true`
@@ -340,7 +367,7 @@ A tool is trusted when any of these match:
 - Its function group appears in `trusted_tools`
 - `trusted_tools = true`
 
-For most setups, trusting a few read-only functions such as `file`, `glob`, or `grep` is safer than trusting everything.
+**Recommended setup:** Trust read-only functions like `file`, `glob`, or `grep` for a smoother workflow without compromising safety.
 
 > [!WARNING]
 > Trusted tools run without asking for confirmation. Be especially careful with tools like `bash` and `edit`, which can change your workspace.
